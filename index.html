@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Likes / Dislikes Survey (V2)</title>
+  <style>
+    :root{
+      --bg:#000;
+      --pill:#cfcfcf;      /* unchecked light gray */
+      --like:#49e000;      /* green */
+      --dislike:#ff1a1a;   /* red */
+      --thumb:#ffffff;     /* white */
+      --thumbOff:#6e6e6e;  /* gray (disabled/opposite) */
+      --text:#fff;
+      --muted:#bdbdbd;
+      --shadow: 0 10px 30px rgba(0,0,0,.45);
+      --hairline: 1px solid rgba(255,255,255,.06);
+    }
+
+    *{box-sizing:border-box}
+
+    /* Reduce outer margins so the form fills the screen more on mobile */
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 50% 0%, #111 0%, #000 55%, #000 100%);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      /* Smaller padding = less unused margin on iPhone */
+      padding: clamp(10px, 3vw, 18px);
+
+      /* Support iPhone safe areas (notch) */
+      padding-left: calc(clamp(10px, 3vw, 18px) + env(safe-area-inset-left));
+      padding-right: calc(clamp(10px, 3vw, 18px) + env(safe-area-inset-right));
+      padding-top: calc(clamp(10px, 3vw, 18px) + env(safe-area-inset-top));
+      padding-bottom: calc(clamp(10px, 3vw, 18px) + env(safe-area-inset-bottom));
+    }
+
+    /* V2: make the “phone” bigger and more responsive */
+    .phone {
+      /* Wider on mobile, but still looks good on desktop */
+      width: min(520px, 96vw);
+
+      /* Fill more vertical space so it’s easier to read */
+      min-height: min(92vh, 900px);
+
+      border-radius: 28px;
+      background: linear-gradient(#0a0a0a, #000);
+      box-shadow: var(--shadow);
+      border: var(--hairline);
+
+      /* More breathing room inside (scaled) */
+      padding: clamp(18px, 3.6vw, 24px) clamp(14px, 3.2vw, 22px) clamp(16px, 3.2vw, 20px);
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* Scale up headline + copy */
+    h1{
+      margin: 8px 0 6px;
+      font-size: clamp(20px, 4.8vw, 26px);
+      font-weight: 900;
+      text-align:center;
+      letter-spacing: .01em;
+    }
+    .sub{
+      margin: 0 0 16px;
+      text-align:center;
+      font-size: clamp(13px, 3.4vw, 16px);
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    /* Header row labels */
+    .headers{
+      display:grid;
+      grid-template-columns: 64px 1fr 64px;
+      align-items:end;
+      padding: 0 6px 10px;
+      font-size: clamp(12px, 3vw, 14px);
+      font-weight: 900;
+      letter-spacing:.08em;
+      color: #fff;
+      opacity: .95;
+    }
+    .headers div:nth-child(1){text-align:left}
+    .headers div:nth-child(3){text-align:right}
+
+    /* List fills remaining space in the “phone” */
+    .list{
+      flex: 1;
+      overflow:auto;
+      padding-right: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.25) transparent;
+
+      /* Make it feel less cramped */
+      padding-bottom: 10px;
+    }
+    .list::-webkit-scrollbar{width:8px}
+    .list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18); border-radius:10px}
+
+    .groupLabel{
+      margin: 12px 8px 8px;
+      font-size: clamp(11px, 2.9vw, 13px);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      color: rgba(255,255,255,.6);
+    }
+
+    /* Bigger row spacing + controls */
+    .row{
+      display:grid;
+      grid-template-columns: 64px 1fr 64px;
+      gap: 12px;
+      align-items:center;
+      padding: 8px 6px;
+    }
+
+    .pill{
+      height: clamp(44px, 10.8vw, 54px);
+      border-radius: 999px;
+      background: var(--pill);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#111;
+      font-weight: 900;
+      font-size: clamp(15px, 3.9vw, 18px);
+      letter-spacing:.01em;
+      user-select:none;
+    }
+    .pill.like{ background: var(--like); color:#061b00; }
+    .pill.dislike{ background: var(--dislike); color:#240000; }
+
+    .thumbBtn{
+      width: clamp(52px, 12vw, 60px);
+      height: clamp(52px, 12vw, 60px);
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.07);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    .thumbBtn:active{ transform: scale(.985); }
+    .thumbBtn[aria-disabled="true"]{
+      cursor:not-allowed;
+      opacity: .85;
+    }
+
+    .thumbBtn svg{
+      width: clamp(24px, 5.4vw, 28px);
+      height: clamp(24px, 5.4vw, 28px);
+      fill:none;
+      stroke-width:2.3;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .thumbBtn .stroke{ stroke: var(--thumb); }
+
+    .thumbBtn.off .stroke{ stroke: var(--thumbOff); }
+    .thumbBtn.onLike{
+      background: rgba(73,224,0,.16);
+      border-color: rgba(73,224,0,.40);
+    }
+    .thumbBtn.onLike .stroke{ stroke: var(--like); }
+    .thumbBtn.onDislike{
+      background: rgba(255,26,26,.16);
+      border-color: rgba(255,26,26,.40);
+    }
+    .thumbBtn.onDislike .stroke{ stroke: var(--dislike); }
+
+    .actions{
+      margin-top: 14px;
+      display:flex;
+      justify-content:center;
+    }
+    .save{
+      border:none;
+      background:#fff;
+      color:#000;
+      font-weight: 1000;
+      letter-spacing:.10em;
+      padding: 12px 30px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-size: clamp(14px, 3.6vw, 16px);
+    }
+
+    /* Bottom hint text is larger in V2 (and you can still adjust it easily) */
+    .hint{
+      margin: 12px 0 0;
+      font-size: clamp(13px, 3.4vw, 16px);
+      color: rgba(255,255,255,.62);
+      text-align:center;
+      line-height:1.35;
+    }
+
+    .output{
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: rgba(255,255,255,.9);
+      display:none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="phone" role="application" aria-label="Likes and Dislikes survey">
+    <h1>Tell us what you like and dislike…</h1>
+    <p class="sub">(this determines what you see on home page)</p>
+
+    <div class="headers">
+      <div>LIKE</div>
+      <div></div>
+      <div>DISLIKE</div>
+    </div>
+
+    <div id="list" class="list" aria-live="polite"></div>
+
+    <div class="actions">
+      <button id="saveBtn" class="save" type="button">SAVE</button>
+    </div>
+
+    <p class="hint">(You can edit Likes/Dislikes at any time in Personalization tab of Settings.)</p>
+    <div id="output" class="output"></div>
+  </div>
+
+  <script>
+    const GENRES = [
+      "Family",
+      "Horror",
+      "Action Adventure",
+      "Romance",
+      "Crime",
+      "Documentary",
+      "Animation",
+      "Comedy",
+      "Reality TV",
+      "Game Shows",
+      "Sci-Fi",
+      "Thriller",
+      "Drama",
+      "Mystery",
+      "Fantasy",
+      "Musical"
+    ];
+
+    const STORAGE_KEY = "likesDislikesPreferences_v2";
+
+    const saved = (() => {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
+      catch { return null; }
+    })();
+
+    let items = GENRES.map((label, i) => ({
+      id: "g" + i,
+      label,
+      state: (saved && saved.states && saved.states[label]) || "unchecked",
+      originalIndex: i
+    }));
+
+    const listEl = document.getElementById("list");
+    const outputEl = document.getElementById("output");
+    const saveBtn = document.getElementById("saveBtn");
+
+    function sortItems(arr){
+      const order = { like: 0, dislike: 1, unchecked: 2 };
+      return [...arr].sort((a,b) => {
+        const d = order[a.state] - order[b.state];
+        if (d !== 0) return d;
+        return a.originalIndex - b.originalIndex;
+      });
+    }
+
+    function groupLabelFor(state){
+      if (state === "like") return "Liked";
+      if (state === "dislike") return "Disliked";
+      return "Unchecked";
+    }
+
+    function thumbSVG(){
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path class="stroke" d="M14 10V5.5c0-1.2-1-2.2-2.2-2.2H11L7.8 10.2c-.3.6-.4 1.2-.2 1.8l.9 2.9c.2.6.8 1.1 1.5 1.1H16c.8 0 1.5-.5 1.7-1.3l1.1-4.4c.2-.9-.4-1.8-1.3-2H14z"/>
+          <path class="stroke" d="M6 10v8"/>
+        </svg>
+      `;
+    }
+
+    function render(){
+      const sorted = sortItems(items);
+
+      const groups = { like: [], dislike: [], unchecked: [] };
+      for (const it of sorted) groups[it.state].push(it);
+
+      const sections = ["like","dislike","unchecked"]
+        .filter(k => groups[k].length > 0)
+        .map(k => {
+          const rows = groups[k].map(it => rowHTML(it)).join("");
+          return `
+            <div class="groupLabel">${groupLabelFor(k)}</div>
+            ${rows}
+          `;
+        }).join("");
+
+      listEl.innerHTML = sections;
+
+      for (const it of items){
+        const likeBtn = document.getElementById(`like-${it.id}`);
+        const dislikeBtn = document.getElementById(`dislike-${it.id}`);
+
+        if (likeBtn) likeBtn.onclick = () => toggle(it.id, "like");
+        if (dislikeBtn) dislikeBtn.onclick = () => toggle(it.id, "dislike");
+      }
+    }
+
+    function rowHTML(it){
+      const isLike = it.state === "like";
+      const isDislike = it.state === "dislike";
+
+      const likeClass =
+        isLike ? "thumbBtn onLike" : (isDislike ? "thumbBtn off" : "thumbBtn");
+      const dislikeClass =
+        isDislike ? "thumbBtn onDislike" : (isLike ? "thumbBtn off" : "thumbBtn");
+
+      const pillClass = isLike ? "pill like" : (isDislike ? "pill dislike" : "pill");
+
+      return `
+        <div class="row" data-state="${it.state}">
+          <button
+            id="like-${it.id}"
+            class="${likeClass}"
+            type="button"
+            aria-label="Like ${it.label}"
+            aria-disabled="false"
+          >${thumbSVG()}</button>
+
+          <div class="${pillClass}" role="button" tabindex="0" aria-label="${it.label}">
+            ${it.label}
+          </div>
+
+          <button
+            id="dislike-${it.id}"
+            class="${dislikeClass}"
+            type="button"
+            aria-label="Dislike ${it.label}"
+            aria-disabled="false"
+          >${thumbSVG().replace('viewBox="0 0 24 24"', 'viewBox="0 0 24 24" style="transform: rotate(180deg)"')}</button>
+        </div>
+      `;
+    }
+
+    function toggle(itemId, action){
+      const it = items.find(x => x.id === itemId);
+      if (!it) return;
+
+      if (action === "like"){
+        it.state = (it.state === "like") ? "unchecked" : "like";
+      } else {
+        it.state = (it.state === "dislike") ? "unchecked" : "dislike";
+      }
+
+      render();
+    }
+
+    function buildPayload(){
+      const liked = items.filter(i => i.state === "like").map(i => i.label);
+      const disliked = items.filter(i => i.state === "dislike").map(i => i.label);
+      const unchecked = items.filter(i => i.state === "unchecked").map(i => i.label);
+
+      const states = {};
+      for (const it of items) states[it.label] = it.state;
+
+      return {
+        version: 2,
+        updatedAt: new Date().toISOString(),
+        liked,
+        disliked,
+        unchecked,
+        states
+      };
+    }
+
+    saveBtn.addEventListener("click", () => {
+      const payload = buildPayload();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      outputEl.style.display = "block";
+      outputEl.textContent = JSON.stringify(payload, null, 2);
+    });
+
+    render();
+  </script>
+</body>
+</html>
